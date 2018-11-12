@@ -25,6 +25,7 @@
     "webpack-dev-server": "^3.1.10"
   },
   "dependencies": {
-    "express": "^4.16.4"
+    "express": "^4.16.4",
+    "spark-md5": "^3.0.0"
   }
 }

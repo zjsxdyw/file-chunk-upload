@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "express": "^4.16.4",
+    "multer": "^1.4.1",
     "spark-md5": "^3.0.0"
   }
 }

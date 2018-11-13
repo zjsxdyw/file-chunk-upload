@@ -1,5 +1,5 @@
 import FileHandler from './utils/FileHandler.js'
-import sendRequest from './utils/request.js'
+import sendRequest, { submitFile } from './utils/request.js'
 document.getElementsByTagName('input')[0].addEventListener('change', function() {
   for(let file of this.files) {
     let fileHandler = new FileHandler(file);
@@ -10,6 +10,12 @@ document.getElementsByTagName('input')[0].addEventListener('change', function() 
       console.log(arguments, this);
     });
     fileHandler.calculate();
+    submitFile({
+      url: '/api/upload',
+      data: {
+        file
+      }
+    });
   }
 });
 

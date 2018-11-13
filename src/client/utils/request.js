@@ -54,7 +54,7 @@ export const submitFile = (options) => {
   }
   options.type = options.type || 'POST';
   options.headers = options.headers || {};
-  options.headers['Content-type'] = 'multipart/form-data;charset=utf-8';
+  // options.headers['Content-type'] = 'multipart/form-data;charset=utf-8';
   const xhr = createRequest(options);
 
   xhr.upload.addEventListener('progress', function (evt) {

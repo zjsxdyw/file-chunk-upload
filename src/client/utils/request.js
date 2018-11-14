@@ -57,11 +57,13 @@ export const submitFile = (options) => {
   // options.headers['Content-type'] = 'multipart/form-data;charset=utf-8';
   const xhr = createRequest(options);
 
-  xhr.upload.addEventListener('progress', function (evt) {
-    if (evt.lengthComputable && typeof options.progress === 'function') {
-      options.progress(evt);
-    }
-  }, false);
+  if(typeof options.progress === 'function') {
+    xhr.upload.addEventListener('progress', function (evt) {
+      if (evt.lengthComputable) {
+        options.progress(evt);
+      }
+    }, false);
+  }
 
   return sendRequest(xhr, formData);
 }

@@ -4,7 +4,7 @@
  * @return {XMLHttpRequest}
  */
 const createRequest = (options) => {
-  const xhr = new XMLHttpRequest()
+  const xhr = new XMLHttpRequest();
   xhr.open(options.type || 'GET', options.url, true);
   xhr.responseType = options.responseType || 'json';
   if (options.headers) {

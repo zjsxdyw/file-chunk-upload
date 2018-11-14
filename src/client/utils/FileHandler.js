@@ -14,7 +14,6 @@ class FileHandler extends Observer {
     this.size = file.size;
     this.chunkSize = chunkSize || 1024 * 1024 * 4;
     this.total = Math.ceil(this.size / this.chunkSize);
-    this.eventMap = {};
   }
   /**
    * Calculate the md5 value of the file

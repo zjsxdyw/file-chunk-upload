@@ -1,5 +1,5 @@
 import FileHandler from './utils/FileHandler.js'
-import AsyncQueue from './AsyncQueue.js'
+import AsyncQueue from './utils/AsyncQueue.js'
 import sendRequest, { submitFile } from './utils/request.js'
 import Uploader from './utils/Uploader.js'
 
@@ -27,3 +27,4 @@ class FileUploader {
     return new Uploader(file, this.options, this.queue);
   }
 }
+export default FileUploader

@@ -1,5 +1,5 @@
-import FileHandler from './utils/FileHandler.js'
-import sendRequest, { submitFile } from './utils/request.js'
+import FileHandler from './FileHandler.js'
+import sendRequest, { submitFile } from './request.js'
 
 const BEFORE_UPLOAD = 0;
 const UPLOADING = 1;
@@ -32,8 +32,9 @@ const initFile = (_this, file) => {
  */
 const uploadFile = (_this) => {
   let fileHandler = new FileHandler(_this.file, _this.options.chunkSize);
+  let chunkSize = fileHandler.chunkSize;
   if(fileHandler.total > 1) {
-    _this.fileHandler.on('chunkLoad', (chunkFile, md5, index) => {
+    fileHandler.on('chunkLoad', (chunkFile, md5, index) => {
       _this.chunkList[index] = {
         md5,
         uploadSize: 0
@@ -42,12 +43,12 @@ const uploadFile = (_this) => {
       if([UPLOADING, PAUSE].indexOf(_this.state) === -1) return;
       const upload = (uid) => {
         let options = _this.options;
-        let start = options.chunkSize * index;
-        let end = (start + options.chunkSize) >= size ? size : (start + options.chunkSize);
+        let start = chunkSize * index;
+        let end = (start + chunkSize) >= _this.size ? _this.size : (start + chunkSize);
         submitFile({
           url: options.uploadUrl,
           data: {
-            uploadId: _this.uploadId
+            uploadId: _this.uploadId,
             file: chunkFile,
             md5,
             index,
@@ -63,6 +64,8 @@ const uploadFile = (_this) => {
           }
         }).then(() => {
           _this.chunkList[index].uploadSize = end - start;
+          _this.percentage = Math.ceil(_this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / _this.size * 100);
+          console.log(_this.percentage);
         }).catch(() => {
           failCount++;
           if(failCount > 10) {
@@ -70,11 +73,16 @@ const uploadFile = (_this) => {
             return;
           }
           _this.queue.add(upload, _this.uuid);
+        }).finally(() => {
+          _this.queue.done(uid);
         });
       };
       _this.queue.add(upload, _this.uuid);
     });
   }
+
+
+  fileHandler.calculate();
 };
 
 /**
@@ -119,7 +127,7 @@ class Uploader {
     this.state = UPLOADING;
 
     let promise;
-    if(isFunction(getUploadId)) {
+    if(isFunction(this.options.getUploadId)) {
       promise = this.options.getUploadId(this.file);
       if(promise && !isFunction(promise.then)) promise = Promise.resolve(promise.toString());
     } else {
@@ -140,3 +148,5 @@ class Uploader {
     this.queue.pause(this.uuid);
   }
 }
+
+export default Uploader

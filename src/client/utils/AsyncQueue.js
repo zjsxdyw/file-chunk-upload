@@ -39,6 +39,7 @@ class AsyncQueue {
       let taskId = uid.replace(/_\d+$/, '');
       if(this.map[taskId]) continue;
       Promise.resolve().then(() => fn(uid));
+      this.set.add(uid);
       this.queue.splice(i--, 1);
     }
   }

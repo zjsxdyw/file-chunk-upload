@@ -1,21 +1,14 @@
-import FileHandler from './utils/FileHandler.js'
+import FileUploader from './FileUploader.js'
 import sendRequest, { submitFile } from './utils/request.js'
+
+const fileUploader = new FileUploader({
+  maxConcurrent: 1,
+  autoUpload: true,
+  uploadUrl: '/api/upload'
+});
 document.getElementsByTagName('input')[0].addEventListener('change', function() {
   for(let file of this.files) {
-    let fileHandler = new FileHandler(file);
-    fileHandler.addListener('load', function() {
-      console.log(arguments, this);
-    });
-    fileHandler.addListener('chunkLoad', function() {
-      console.log(arguments, this);
-    });
-    fileHandler.calculate();
-    submitFile({
-      url: '/api/upload',
-      data: {
-        file
-      }
-    });
+    fileUploader.addFile(file);
   }
 });
 

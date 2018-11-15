@@ -21,10 +21,11 @@ class AsyncQueue {
    */
   add(callback, taskId, forward) {
     let operator = forward ? 'unshift' : 'push';
-    let uid = `${taskId || ''}_${this.uid++}`;
+    let uid = this.uid++;
     this.queue[operator]({
       uid,
-      fn: callback
+      fn: callback,
+      taskId
     });
     this.run();
     return uid;
@@ -36,8 +37,7 @@ class AsyncQueue {
   run() {
     Promise.resolve().then(() => {
       for(let i = 0; i < this.queue.length && this.set.size < this.maxLength; i++) {
-        let { uid, fn } = this.queue[i];
-        let taskId = uid.replace(/_\d+$/, '');
+        let { uid, fn, taskId } = this.queue[i];
         if(this.map[taskId]) continue;
         Promise.resolve().then(() => fn(uid));
         this.set.add(uid);
@@ -91,8 +91,7 @@ class AsyncQueue {
   remove(taskId) {
     delete this.map[taskId];
     for(let i = this.queue.length - 1; i >= 0; i--) {
-      let { uid } = this.queue[i];
-      if(uid.replace(/_\d+$/, '') === taskId) this.queue.splice(i, 1);
+      if(this.queue[i].taskId === taskId) this.queue.splice(i, 1);
     }
   }
 }

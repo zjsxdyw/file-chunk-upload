@@ -34,14 +34,16 @@ class AsyncQueue {
    * Run the callback from the queue
    */
   run() {
-    for(let i = 0; i < this.queue.length && this.set.size < this.maxLength; i++) {
-      let { uid, fn } = this.queue[i];
-      let taskId = uid.replace(/_\d+$/, '');
-      if(this.map[taskId]) continue;
-      Promise.resolve().then(() => fn(uid));
-      this.set.add(uid);
-      this.queue.splice(i--, 1);
-    }
+    Promise.resolve().then(() => {
+      for(let i = 0; i < this.queue.length && this.set.size < this.maxLength; i++) {
+        let { uid, fn } = this.queue[i];
+        let taskId = uid.replace(/_\d+$/, '');
+        if(this.map[taskId]) continue;
+        Promise.resolve().then(() => fn(uid));
+        this.set.add(uid);
+        this.queue.splice(i--, 1);
+      }
+    });
   }
 
   /**

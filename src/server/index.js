@@ -10,37 +10,43 @@ app.use(bodyParser.urlencoded());
 // parse application/json
 app.use(bodyParser.json());
 
-var storage = multer.diskStorage({
+
+const createFolder = (folder) => {
+  try{
+    fs.accessSync(folder);
+  }catch(e){
+    fs.mkdirSync(folder);
+  }
+};
+
+const uploadFolder = './upload/';
+createFolder(uploadFolder);
+
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, './upload/');
+    const folder = uploadFolder + req.body.uploadId;
+    createFolder(folder);
+    cb(null, folder);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
+    cb(null, req.body.md5);
   }
 });
 
-var createFolder = function(folder){
-    try{
-        fs.accessSync(folder); 
-    }catch(e){
-        fs.mkdirSync(folder);
-    }  
-};
-
-var uploadFolder = './upload/';
-createFolder(uploadFolder);
-
-var upload = multer({ storage: storage });
+const upload = multer({ storage: storage });
 
 app.use(express.static('dist'));
-app.get('/api/getUsername', (req, res) => {
-    res.send({ username: os.userInfo().username });
+
+app.get('/api/checkMD5', (req, res) => {
+  res.send(Math.random() > 0.5 ? true : false);
 });
-app.post('/api/setUsername', (req, res) => {
-    res.send({ username: req.body.name });
+
+app.post('/api/merge', (req, res) => {
+  res.send({ data: '' });
 });
+
 app.post('/api/upload', upload.single('file'), (req, res) => {
-    res.send({ result: true });
-})
+  res.send();
+});
 
 app.listen(8080, () => console.log('Listening on port 8080!'));

@@ -21,6 +21,7 @@ const initFile = (_this, file) => {
   _this.state = BEFORE_UPLOAD;
   _this.percentage = 0;
   _this.uploadId = '';
+  _this.md5 = '';
   _this.uuid = guid();
   _this.chunkList = [];
 };
@@ -31,56 +32,93 @@ const initFile = (_this, file) => {
  * @param {File} file
  */
 const uploadFile = (_this) => {
-  let fileHandler = new FileHandler(_this.file, _this.options.chunkSize);
+  let queue = _this.queue;
+  let options = _this.options;
+  let fileHandler = new FileHandler(_this.file, options.chunkSize);
   let chunkSize = fileHandler.chunkSize;
-  if(fileHandler.total > 1) {
-    fileHandler.on('chunkLoad', (chunkFile, md5, index) => {
-      _this.chunkList[index] = {
-        md5,
-        uploadSize: 0
-      };
-      let failCount = 0;
-      if([UPLOADING, PAUSE].indexOf(_this.state) === -1) return;
-      const upload = (uid) => {
-        let options = _this.options;
-        let start = chunkSize * index;
-        let end = (start + chunkSize) >= _this.size ? _this.size : (start + chunkSize);
-        submitFile({
-          url: options.uploadUrl,
-          data: {
-            uploadId: _this.uploadId,
-            file: chunkFile,
-            md5,
-            index,
-            start,
-            end
-          },
-          progress(evt) {
-            let percent = evt.loaded / evt.total;
-            _this.chunkList[index].uploadSize = percent * (end - start);
-            if([UPLOADING].indexOf(_this.state) === -1) return;
-            _this.percentage = Math.ceil(_this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / _this.size * 100);
-            console.log(_this.percentage);
-          }
-        }).then(() => {
-          _this.chunkList[index].uploadSize = end - start;
+
+  const merge = () => {
+    sendRequest({
+      url: options.mergeUrl,
+      type: 'post',
+      contentType: 'json',
+      data: {
+        uploadId: _this.uploadId,
+        chunkMD5s: _this.chunkList.map(item => item.md5)
+      }
+    })
+  };
+  // if(fileHandler.total > 1) {
+  fileHandler.on('chunkLoad', (chunkFile, md5, index) => {
+    _this.chunkList[index] = {
+      md5,
+      uploadSize: 0
+    };
+    let failCount = 0;
+    if([UPLOADING, PAUSE].indexOf(_this.state) === -1) return;
+    const upload = (uid) => {
+      let start = chunkSize * index;
+      let end = (start + chunkSize) >= _this.size ? _this.size : (start + chunkSize);
+      submitFile({
+        url: options.uploadUrl,
+        data: {
+          uploadId: _this.uploadId,
+          md5,
+          index,
+          start,
+          end,
+          file: chunkFile
+        },
+        progress(evt) {
+          let percent = evt.loaded / evt.total;
+          _this.chunkList[index].uploadSize = percent * (end - start);
+          if([UPLOADING].indexOf(_this.state) === -1) return;
           _this.percentage = Math.ceil(_this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / _this.size * 100);
           console.log(_this.percentage);
-        }).catch(() => {
-          failCount++;
-          if(failCount > 10) {
-            _this.state = ERROR;
-            return;
-          }
-          _this.queue.add(upload, _this.uuid);
-        }).finally(() => {
-          _this.queue.done(uid);
-        });
-      };
-      _this.queue.add(upload, _this.uuid);
-    });
-  }
+        }
+      }).then(() => {
+        if([UPLOADING].indexOf(_this.state) === -1) return;
+        _this.chunkList[index].uploadSize = end - start;
+        _this.percentage = Math.ceil(_this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / _this.size * 100);
+        console.log(_this.percentage);
+        if(index + 1 === fileHandler.total) {
+          merge();
+        }
+      }).catch(() => {
+        failCount++;
+        if(failCount > 10) {
+          _this.state = ERROR;
+          return;
+        }
+        queue.add(upload, _this.uuid);
+      }).finally(() => {
+        queue.done(uid);
+      });
+    };
+    queue.add(upload, _this.uuid);
+  });
+  // }
 
+  fileHandler.on('load', (file, md5) => {
+    if(fileHandler.total === 1) queue.pause(_this.uuid);
+    sendRequest({
+      url: options.checkUrl,
+      data: {
+        uploadId: _this.uploadId,
+        md5,
+      }
+    }).then((result) => {
+      if(result) {
+        _this.state = COMPLETED;
+        queue.remove(_this.uuid);
+        _this.percentage = 100;
+      } else if([UPLOADING].indexOf(_this.state) > -1 && fileHandler.total > 1) {
+        queue.continue(_this.uuid);
+      }
+    }).catch(() => {
+
+    });
+  });
 
   fileHandler.calculate();
 };

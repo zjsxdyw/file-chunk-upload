@@ -30,9 +30,11 @@ class FileHandler extends Observer {
 
     fileReader.onload = (event) => {
       let chunkSpark = new SparkMD5.ArrayBuffer();
+      console.time('spark-md5:' + index);
       spark.append(event.target.result);
       chunkSpark.append(event.target.result);
       let md5 = chunkSpark.end();
+      console.timeEnd('spark-md5:' + index);
       this.fireEvent('chunkLoad', chunkFile, md5, index);
       index++;
       if(index === total) this.fireEvent('load', file, spark.end());

@@ -22,7 +22,7 @@ const createRequest = (options) => {
  * @return {Promise}
  */
 const sendRequest = (xhr, data) => {
-  return new Promise((resolve, reject) => {
+  let promise = new Promise((resolve, reject) => {
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         let response;
@@ -33,12 +33,17 @@ const sendRequest = (xhr, data) => {
         }
         resolve(response);
       } else {
-        reject(xhr.response);
+        reject(xhr);
       }
     }
-    xhr.onerror = () => reject(xhr.response);
+    xhr.onerror = (err) => reject(xhr);
     xhr.send(data);
   });
+  
+  promise.abort = () => {
+    xhr.abort();
+  };
+  return promise;
 }
 
 /**

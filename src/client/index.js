@@ -8,8 +8,36 @@ const fileUploader = new FileUploader({
   checkUrl: '/api/checkMD5',
   mergeUrl: '/api/merge'
 });
-document.getElementsByTagName('input')[0].addEventListener('change', function() {
-  for(let file of this.files) {
-    fileUploader.addFile(file);
+document.getElementById('input').addEventListener('change', function() {
+  if(!this.files[0]) return;
+
+  window.file = fileUploader.addFile();
+
+  let percentage = window.file.percentage;
+  Object.defineProperty(window.file, 'percentage', {
+    get() {
+      return percentage;
+    },
+    set(newValue) {
+      percentage = newValue;
+      document.getElementById('percentage').innerText = percentage;
+      return newValue;
+    }
+  })
+});
+
+document.getElementById('pause').addEventListener('click', function() {
+  file && file.pause();
+});
+
+document.getElementById('continue').addEventListener('click', function() {
+  file && file.continue();
+});
+
+document.getElementById('remove').addEventListener('click', function() {
+  if(file) {
+    file.remove();
+    window.file = undefined;
+    document.getElementById('input').value = '';
   }
 });

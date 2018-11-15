@@ -6,6 +6,7 @@ const UPLOADING = 1;
 const PAUSE = 2;
 const COMPLETED = 3;
 const ERROR = 4;
+const ABORT = 5;
 /**
  * Initialize file data
  * @param {FileUploader} _this
@@ -44,22 +45,32 @@ const uploadFile = (_this) => {
       contentType: 'json',
       data: {
         uploadId: _this.uploadId,
-        chunkMD5s: _this.chunkList.map(item => item.md5)
+        chunkMD5s: _this.chunkList.map(item => item.md5),
+        fileName: _this.name
       }
-    })
+    }).then((data) => {
+      _this.state = COMPLETED;
+      _this.response = data;
+    }).catch(() => {
+      _this.state = ERROR;
+    });
   };
-  // if(fileHandler.total > 1) {
+
   fileHandler.on('chunkLoad', (chunkFile, md5, index) => {
     _this.chunkList[index] = {
       md5,
-      uploadSize: 0
+      uploadSize: 0,
+      uploadPromise: null
     };
     let failCount = 0;
-    if([UPLOADING, PAUSE].indexOf(_this.state) === -1) return;
+    if([UPLOADING, PAUSE].indexOf(_this.state) === -1) {
+      fileHandler.abort();
+      return;
+    }
     const upload = (uid) => {
       let start = chunkSize * index;
       let end = (start + chunkSize) >= _this.size ? _this.size : (start + chunkSize);
-      submitFile({
+      let uploadPromise = submitFile({
         url: options.uploadUrl,
         data: {
           uploadId: _this.uploadId,
@@ -73,18 +84,17 @@ const uploadFile = (_this) => {
           let percent = evt.loaded / evt.total;
           _this.chunkList[index].uploadSize = percent * (end - start);
           if([UPLOADING].indexOf(_this.state) === -1) return;
-          _this.percentage = Math.ceil(_this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / _this.size * 100);
-          console.log(_this.percentage);
+          _this.updatePercentage();
         }
-      }).then(() => {
+      });
+      uploadPromise.then(() => {
         if([UPLOADING].indexOf(_this.state) === -1) return;
         _this.chunkList[index].uploadSize = end - start;
-        _this.percentage = Math.ceil(_this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / _this.size * 100);
-        console.log(_this.percentage);
+        _this.updatePercentage();
         if(index + 1 === fileHandler.total) {
           merge();
         }
-      }).catch(() => {
+      }).catch((e) => {
         failCount++;
         if(failCount > 10) {
           _this.state = ERROR;
@@ -93,11 +103,13 @@ const uploadFile = (_this) => {
         queue.add(upload, _this.uuid);
       }).finally(() => {
         queue.done(uid);
+        _this.chunkList[index].uploadPromise = null;
       });
+
+      _this.chunkList[index].uploadPromise = uploadPromise;
     };
     queue.add(upload, _this.uuid);
   });
-  // }
 
   fileHandler.on('load', (file, md5) => {
     if(fileHandler.total === 1) queue.pause(_this.uuid);
@@ -106,22 +118,25 @@ const uploadFile = (_this) => {
       data: {
         uploadId: _this.uploadId,
         md5,
+        fileName: _this.name
       }
     }).then((result) => {
       if(result) {
         _this.state = COMPLETED;
         queue.remove(_this.uuid);
         _this.percentage = 100;
-      } else if([UPLOADING].indexOf(_this.state) > -1 && fileHandler.total > 1) {
+      } else if([UPLOADING].indexOf(_this.state) > -1 && fileHandler.total === 1) {
         queue.continue(_this.uuid);
       }
-    }).catch(() => {
-
+    }).catch((e) => {
+      
     });
   });
 
   fileHandler.calculate();
 };
+
+
 
 /**
  * Generate Guid
@@ -139,6 +154,11 @@ const guid = () => {
   return s.join("");
 }
 
+/**
+ * Check whether the fn is function
+ * @param {Any} fn
+ * @return {Boolean}
+ */
 const isFunction = (fn) => {
   return typeof fn === 'function';
 }
@@ -184,6 +204,28 @@ class Uploader {
     if(this.state !== UPLOADING) return;
     this.state = PAUSE;
     this.queue.pause(this.uuid);
+  }
+
+  continue() {
+    if(this.state !== PAUSE) return;
+    this.state = UPLOADING;
+    this.queue.continue(this.uuid);
+  }
+
+  remove() {
+    this.state = ABORT;
+    this.queue.remove(this.uuid);
+    this.chunkList.forEach(item => {
+      if(item.uploadPromise) item.uploadPromise.abort();
+    })
+  }
+
+  updatePercentage() {
+    this.percentage = Math.ceil(this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / this.size * 100);
+    if(this.percentage > 100) {
+      this.percentage = 100;
+    }
+    return this.percentage;
   }
 }
 

@@ -11,7 +11,7 @@ const fileUploader = new FileUploader({
 document.getElementById('input').addEventListener('change', function() {
   if(!this.files[0]) return;
 
-  window.file = fileUploader.addFile();
+  window.file = fileUploader.addFile(this.files[0]);
 
   let percentage = window.file.percentage;
   Object.defineProperty(window.file, 'percentage', {

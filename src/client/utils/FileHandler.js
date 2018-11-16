@@ -6,16 +6,19 @@ class FileHandler extends Observer {
   /**
    * Constructor
    * @param {File} file
+   * @param {Number} firstSize
    * @param {Number} chunkSize
    */
-  constructor(file, chunkSize) {
+  constructor(file, firstSize, chunkSize) {
     super();
     this.file = file;
     this.size = file.size;
+    this.firstSize = firstSize || 1024 * 256;
     this.chunkSize = chunkSize || 1024 * 1024 * 4;
     this.total = Math.ceil(this.size / this.chunkSize);
     this.stop = false;
   }
+
   /**
    * Calculate the md5 value of the file
    */
@@ -47,6 +50,7 @@ class FileHandler extends Observer {
     };
 
     const read = () => {
+      if(this.stop) return;
       let start = chunkSize * index;
       let end = (start + chunkSize) >= size ? size : (start + chunkSize);
       chunkFile = blobSlice.call(file, start, end);
@@ -54,6 +58,28 @@ class FileHandler extends Observer {
     };
 
     read();
+  }
+
+  /**
+   * Calculate the md5 value of the first size of the file
+   */
+  calculateForFirstSize() {
+    let fileReader = new FileReader();
+    let spark = new SparkMD5.ArrayBuffer();
+
+    fileReader.onload = (event) => {
+      if(this.stop) return;
+      this.fireEvent('firstLoad', spark.end());
+    };
+
+    fileReader.onerror = (event) => {
+      console.warn('oops, something went wrong.');
+      this.fireEvent('error');
+    };
+
+    let end = this.firstSize >= this.size ? this.size : this.firstSize;
+
+    fileReader.readAsArrayBuffer(blobSlice.call(this.file, 0, end));
   }
 
   abort() {

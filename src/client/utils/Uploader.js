@@ -1,7 +1,8 @@
 import FileHandler from './FileHandler.js'
-import sendRequest, { submitFile } from './request.js'
+import sendRequest, { submitFile } from '../utils/request.js'
+import { guid, isFunction } from '../utils/util.js'
 
-const BEFORE_UPLOAD = 0;
+const PREPARE = 0;
 const UPLOADING = 1;
 const PAUSE = 2;
 const COMPLETED = 3;
@@ -19,24 +20,66 @@ const initFile = (_this, file) => {
   _this.size = file.size || 0;
   _this.lastModified = file.lastModified;
   _this.lastModifiedDate = file.lastModifiedDate || new Date();
-  _this.state = BEFORE_UPLOAD;
+  _this.state = PREPARE;
   _this.percentage = 0;
   _this.uploadId = '';
   _this.md5 = '';
-  _this.uuid = guid();
+  _this.firstMD5 = '';
+  _this.taskId = guid();
   _this.chunkList = [];
+  _this.isExistMap = {};
+};
+
+
+const prepare = function(uploadId) {
+  let { prepareUrl, headers } = this.options;
+  return sendRequest({
+    url: prepareUrl,
+    headers: this.options.headers,
+    data: {
+      uploadId,
+      fileName: this.name,
+      size: this.size
+    }
+  });
+};
+
+const mergeFile = function(uploadId, chunkMD5List) {
+  let { mergeUrl, headers } = this.options;
+  return sendRequest({
+    url: mergeUrl,
+    type: 'post',
+    contentType: 'json',
+    headers: this.options.headers,
+    data: {
+      uploadId,
+      md5: this.md5,
+      chunkMD5List,
+      fileName: this.name
+    }
+  });
 };
 
 /**
  * Upload file
- * @param {FileUploader} _this
  * @param {File} file
  */
-const uploadFile = (_this) => {
-  let queue = _this.queue;
-  let options = _this.options;
-  let fileHandler = new FileHandler(_this.file, options.chunkSize);
+const uploadFile = function() {
+  let queue = this.queue;
+  let options = this.options;
+  let fileHandler = new FileHandler(this.file, options.firstSize, options.chunkSize);
   let chunkSize = fileHandler.chunkSize;
+
+  const handlePrepare = (promise) => {
+    promise.then(({ uploadId, chunkMD5List }) => {
+      this.uploadId = uploadId;
+      (chunkMD5List || []).forEach(md5 => this.isExistMap[md5] = true);
+      fileHandler.calculate();
+    }).catch((e) => {
+      this.errorMessage = e;
+      this.state = ERROR;
+    });
+  };
 
   const merge = () => {
     sendRequest({
@@ -44,124 +87,137 @@ const uploadFile = (_this) => {
       type: 'post',
       contentType: 'json',
       data: {
-        uploadId: _this.uploadId,
-        chunkMD5s: _this.chunkList.map(item => item.md5),
-        fileName: _this.name
+        uploadId: this.uploadId,
+        md5: this.md5,
+        chunkMD5List: this.chunkList.map(item => item.md5),
+        fileName: this.name
       }
-    }).then((data) => {
-      _this.state = COMPLETED;
-      _this.response = data;
+    }).then((result) => {
+      this.state = COMPLETED;
+      this.response = result;
+      this.setStorageInfo();
     }).catch(() => {
-      _this.state = ERROR;
+      this.errorMessage = e;
+      this.state = ERROR;
     });
   };
 
   fileHandler.on('chunkLoad', (chunkFile, md5, index) => {
-    _this.chunkList[index] = {
+    this.chunkList[index] = {
       md5,
       uploadSize: 0,
-      uploadPromise: null
+      uploadPromise: null,
+      done: false
     };
-    let failCount = 0;
-    if([UPLOADING, PAUSE].indexOf(_this.state) === -1) {
+    if([UPLOADING, PAUSE].indexOf(this.state) === -1) {
       fileHandler.abort();
       return;
     }
+
+    let failCount = 0;
+    let start = chunkSize * index;
+    let end = (start + chunkSize) >= this.size ? this.size : (start + chunkSize);
+
+    if(this.isExistMap[md5]) {
+        this.chunkList[index].uploadSize = end - start;
+        this.chunkList[index].done = true;
+        this.updatePercentage();
+        if(index + 1 === fileHandler.total) {
+          merge();
+        }
+      return;
+    }
     const upload = (uid) => {
-      let start = chunkSize * index;
-      let end = (start + chunkSize) >= _this.size ? _this.size : (start + chunkSize);
       let uploadPromise = submitFile({
         url: options.uploadUrl,
         data: {
-          uploadId: _this.uploadId,
+          uploadId: this.uploadId,
           md5,
           index,
           start,
           end,
           file: chunkFile
         },
-        progress(evt) {
+        progress: (evt) => {
           let percent = evt.loaded / evt.total;
-          _this.chunkList[index].uploadSize = percent * (end - start);
-          if([UPLOADING].indexOf(_this.state) === -1) return;
-          _this.updatePercentage();
+          this.chunkList[index].uploadSize = percent * (end - start);
+          if([UPLOADING].indexOf(this.state) === -1) return;
+          this.updatePercentage();
         }
       });
       uploadPromise.then(() => {
-        if([UPLOADING].indexOf(_this.state) === -1) return;
-        _this.chunkList[index].uploadSize = end - start;
-        _this.updatePercentage();
+        if([UPLOADING].indexOf(this.state) === -1) return;
+        this.chunkList[index].uploadSize = end - start;
+        this.chunkList[index].done = true;
+        this.updatePercentage();
+        this.setStorageInfo();
         if(index + 1 === fileHandler.total) {
           merge();
         }
       }).catch((e) => {
         failCount++;
         if(failCount > 10) {
-          _this.state = ERROR;
+          this.state = ERROR;
           return;
         }
-        queue.add(upload, _this.uuid);
+        queue.add(upload, this.taskId);
       }).finally(() => {
         queue.done(uid);
-        _this.chunkList[index].uploadPromise = null;
+        this.chunkList[index].uploadPromise = null;
       });
 
-      _this.chunkList[index].uploadPromise = uploadPromise;
+      this.chunkList[index].uploadPromise = uploadPromise;
     };
-    queue.add(upload, _this.uuid);
+    queue.add(upload, this.taskId);
   });
 
   fileHandler.on('load', (file, md5) => {
-    if(fileHandler.total === 1) queue.pause(_this.uuid);
+    this.md5 = md5;
+    if(fileHandler.total === 1) queue.pause(this.taskId);
     sendRequest({
-      url: options.checkUrl,
+      url: options.checkMD5Url,
       data: {
-        uploadId: _this.uploadId,
+        uploadId: this.uploadId,
         md5,
-        fileName: _this.name
+        fileName: this.name
       }
     }).then((result) => {
       if(result) {
-        _this.state = COMPLETED;
-        queue.remove(_this.uuid);
-        _this.percentage = 100;
-      } else if([UPLOADING].indexOf(_this.state) > -1 && fileHandler.total === 1) {
-        queue.continue(_this.uuid);
+        this.state = COMPLETED;
+        this.response = result;
+        this.setStorageInfo();
+        queue.remove(this.taskId);
+        this.percentage = 100;
+      } else if([UPLOADING].indexOf(this.state) > -1 && fileHandler.total === 1) {
+        queue.continue(this.taskId);
       }
     }).catch((e) => {
       
     });
   });
 
-  fileHandler.calculate();
-};
-
-
-
-/**
- * Generate Guid
- * @return {String}
- */
-const guid = () => {
-  let s = [];
-  let hexDigits = "0123456789abcdef";
-  for (let i = 0; i < 36; i++) {
-    s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+  if(fileHandler.total > 1) {
+    fileHandler.on('firstLoad', (md5) => {
+      this.firstMD5 = md5;
+      let info = this.getStorageInfo();
+      if(info) {
+        if(info.done) {
+          this.uploadId = info.uploadId;
+          this.state = COMPLETED;
+          this.response = info.response;
+          return;
+        }
+        handlePrepare(prepare.call(this, info.uploadId));
+      } else {
+        handlePrepare(prepare.call(this));
+      }
+    });
+    fileHandler.calculateForFirstSize();
+  } else {
+    handlePrepare(prepare.call(this));
   }
-  s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
-  s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
-  s[8] = s[13] = s[18] = s[23] = "-";
-  return s.join("");
-}
 
-/**
- * Check whether the fn is function
- * @param {Any} fn
- * @return {Boolean}
- */
-const isFunction = (fn) => {
-  return typeof fn === 'function';
-}
+};
 
 class Uploader {
   /**
@@ -181,43 +237,29 @@ class Uploader {
    * Prepare for upload
    */
   upload() {
-    if(this.state !== BEFORE_UPLOAD) return;
+    if(this.state !== PREPARE) return;
     this.state = UPLOADING;
-
-    let promise;
-    if(isFunction(this.options.getUploadId)) {
-      promise = this.options.getUploadId(this.file);
-      if(promise && !isFunction(promise.then)) promise = Promise.resolve(promise.toString());
-    } else {
-      promise = Promise.resolve(guid());
-    }
-    promise.then((uploadId) => {
-      this.uploadId = uploadId;
-      uploadFile(this);
-    }).catch((e) => {
-      console.log(e);
-      this.state = ERROR;
-    });
+    uploadFile.call(this);
   }
 
   pause() {
     if(this.state !== UPLOADING) return;
     this.state = PAUSE;
-    this.queue.pause(this.uuid);
+    this.queue.pause(this.taskId);
   }
 
   continue() {
     if(this.state !== PAUSE) return;
     this.state = UPLOADING;
-    this.queue.continue(this.uuid);
+    this.queue.continue(this.taskId);
   }
 
   remove() {
     this.state = ABORT;
-    this.queue.remove(this.uuid);
+    this.queue.remove(this.taskId);
     this.chunkList.forEach(item => {
       if(item.uploadPromise) item.uploadPromise.abort();
-    })
+    });
   }
 
   updatePercentage() {
@@ -226,6 +268,38 @@ class Uploader {
       this.percentage = 100;
     }
     return this.percentage;
+  }
+
+  getStorageKey() {
+    return `${this.name}#${this.size}#${this.lastModified}#${this.firstMD5}`;
+  }
+
+  getStorageInfo() {
+    let string = localStorage.getItem(this.getStorageKey());
+    let info;
+    try {
+      info = JSON.parse(string);
+    } catch(e) {
+      info = undefined;
+    }
+    return info;
+  }
+
+  setStorageInfo() {
+    let key = this.getStorageKey();
+    let info = {
+      uploadId: this.uploadId,
+      date: new Date().getTime()
+    };
+    if(this.state === COMPLETED) {
+      info.done = true;
+      info.response = this.response;
+    }
+    localStorage.setItem(key, JSON.stringify(info));
+  }
+
+  removeStorageInfo() {
+    localStorage.removeItem(this.getStorageKey());
   }
 }
 

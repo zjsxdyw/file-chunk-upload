@@ -4,9 +4,10 @@ import sendRequest, { submitFile } from './utils/request.js'
 const fileUploader = new FileUploader({
   maxConcurrent: 2,
   autoUpload: true,
-  uploadUrl: '/api/upload',
-  checkUrl: '/api/checkMD5',
-  mergeUrl: '/api/merge'
+  prepareUrl: '/file/prepare',
+  uploadUrl: '/file/upload',
+  checkMD5Url: '/file/checkMD5',
+  mergeUrl: '/file/merge'
 });
 document.getElementById('input').addEventListener('change', function() {
   if(!this.files[0]) return;

@@ -84,6 +84,7 @@ export default function (options) {
   if(options.data) {
     data = '';
     Object.keys(options.data).forEach(key => {
+      if(options.data[key] === undefined) return;
       if(data) data += `&`;
       data += `${key}=${options.data[key]}`;
     });

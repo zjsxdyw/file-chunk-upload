@@ -38,7 +38,7 @@ const guid = () => {
   return s.join("");
 };
 
-createFolder(uploadFolder);
+createFolder('');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {

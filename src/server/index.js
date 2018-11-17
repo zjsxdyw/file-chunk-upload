@@ -54,8 +54,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-const md5Map = {};
-
 app.use(express.static('dist'));
 
 app.get('/file/prepare', (req, res) => {
@@ -78,34 +76,59 @@ app.get('/file/checkMD5', (req, res) => {
 app.post('/file/merge', (req, res) => {
   let { md5, chunkMD5List, uploadId, fileName } = req.body;
   if(!md5) res.status(500).send();
-  md5Map[md5] = true;
   let downloadPath = downloadFolder + md5;
-  let promise = Promise.resolve();
 
-  chunkMD5List.forEach(str => {
-    promise = promise.then(() => {
-      return new Promise((resolve, reject) => {
-        var w = fs.createWriteStream(downloadPath, {flags: 'a'});
-        // open source file for reading
-        var r = fs.createReadStream(uploadFolder + uploadId + '/' + str);
+  // let promise = Promise.resolve();
 
-        w.on('close', function() {
-            resolve();
-        });
+  // chunkMD5List.forEach(str => {
+  //   promise = promise.then(() => {
+  //     return new Promise((resolve, reject) => {
+  //       var w = fs.createWriteStream(downloadPath, {flags: 'a'});
+  //       // open source file for reading
+  //       var r = fs.createReadStream(uploadFolder + uploadId + '/' + str);
 
-        r.pipe(w);
+  //       w.on('close', function() {
+  //           resolve();
+  //       });
+
+  //       r.pipe(w);
+  //     });
+  //   });
+  // });
+
+  // promise.then(() => {
+  //   res.send({ downloadId: md5 });
+  // });
+
+  let start = 0;
+  let promises = [];
+
+  chunkMD5List.forEach((str, index) => {
+    promises.push(new Promise((resolve, reject) => {
+      filePath = uploadFolder + uploadId + '/' + str;
+
+      let w = fs.createWriteStream(downloadPath, {
+        flags: 'w',
+        start
       });
-    });
+      console.log(`merge: ${start}`)
+
+      start += fs.lstatSync(filePath).size;
+
+      // open source file for reading
+      let r = fs.createReadStream(filePath);
+
+      w.on('close', function() {
+          resolve();
+      });
+
+      r.pipe(w);
+    }));
   });
 
-  promise.then(() => {
+  Promise.all(promises).then(() => {
     res.send({ downloadId: md5 });
   });
-
-});
-
-app.post('/file/upload', upload.single('file'), (req, res) => {
-  res.send();
 });
 
 app.get('/file/download/:md5',function(req, res){

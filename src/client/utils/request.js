@@ -37,6 +37,7 @@ const sendRequest = (xhr, data) => {
       }
     }
     xhr.onerror = (err) => reject(xhr);
+    xhr.onabort = () => reject('abort');
     xhr.send(data);
   });
   

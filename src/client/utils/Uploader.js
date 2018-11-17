@@ -155,6 +155,7 @@ const uploadFile = function() {
           merge();
         }
       }).catch((e) => {
+        if(e === 'abort') return;
         failCount++;
         if(failCount > 10) {
           this.state = ERROR;

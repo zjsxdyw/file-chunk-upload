@@ -42,3 +42,7 @@ document.getElementById('remove').addEventListener('click', function() {
     document.getElementById('input').value = '';
   }
 });
+
+document.getElementById('download').addEventListener('click', function() {
+  file && file.response && open('/file/download/' + file.response.downloadId + '?fileName=' + file.name);
+});

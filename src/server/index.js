@@ -73,6 +73,10 @@ app.get('/file/checkMD5', (req, res) => {
   else res.send(false);
 });
 
+app.post('/file/upload', upload.single('file'), (req, res) => { 
+  res.send(); 
+});
+
 app.post('/file/merge', (req, res) => {
   let { md5, chunkMD5List, uploadId, fileName } = req.body;
   if(!md5) res.status(500).send();

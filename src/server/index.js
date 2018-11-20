@@ -68,7 +68,7 @@ app.get('/file/prepare', (req, res) => {
   res.send({ uploadId, chunkMD5List });
 });
 
-app.get('/file/checkMD5', (req, res) => {
+app.get('/file/check', (req, res) => {
   if(fs.existsSync(downloadFolder + req.query.md5)) res.send({ downloadId: req.query.md5 });
   else res.send(false);
 });
@@ -115,7 +115,6 @@ app.post('/file/merge', (req, res) => {
         flags: 'w',
         start
       });
-      console.log(`merge: ${start}`)
 
       start += fs.lstatSync(filePath).size;
 

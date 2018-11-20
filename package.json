@@ -1,6 +1,6 @@
 {
   "name": "file-upload",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "file upload",
   "main": "index.js",
   "scripts": {

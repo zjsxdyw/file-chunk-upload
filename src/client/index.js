@@ -2,12 +2,8 @@ import FileUploader from './FileUploader.js'
 import sendRequest, { submitFile } from './utils/request.js'
 
 const fileUploader = new FileUploader({
-  maxConcurrent: 2,
-  autoUpload: true,
-  prepareUrl: '/file/prepare',
-  uploadUrl: '/file/upload',
-  checkMD5Url: '/file/checkMD5',
-  mergeUrl: '/file/merge'
+  maxConcurrent: 1,
+  autoUpload: true
 });
 document.getElementById('input').addEventListener('change', function() {
   if(!this.files[0]) return;
@@ -24,20 +20,22 @@ document.getElementById('input').addEventListener('change', function() {
       document.getElementById('percentage').innerText = percentage;
       return newValue;
     }
-  })
+  });
+
+  document.getElementById('input').value = '';
 });
 
 document.getElementById('pause').addEventListener('click', function() {
-  file && file.pause();
+  file && fileUploader.pause(file);
 });
 
 document.getElementById('continue').addEventListener('click', function() {
-  file && file.continue();
+  file && fileUploader.continue(file);
 });
 
 document.getElementById('remove').addEventListener('click', function() {
   if(file) {
-    file.remove();
+    fileUploader.remove(file);
     window.file = undefined;
     document.getElementById('input').value = '';
   }

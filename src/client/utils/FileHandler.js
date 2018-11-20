@@ -30,7 +30,7 @@ class FileHandler extends Observer {
     let total = this.total;
     let fileReader = new FileReader();
     let spark = new SparkMD5.ArrayBuffer();
-    let chunkFile;
+    let chunk, start, end;
 
     fileReader.onload = (event) => {
       if(this.stop) return;
@@ -38,9 +38,9 @@ class FileHandler extends Observer {
       spark.append(event.target.result);
       chunkSpark.append(event.target.result);
       let md5 = chunkSpark.end();
-      this.fireEvent('chunkLoad', chunkFile, md5, index);
+      this.fireEvent('chunkLoad', { chunk, md5, index, start, end });
       index++;
-      if(index === total) this.fireEvent('load', file, spark.end());
+      if(index === total) this.fireEvent('load', spark.end());
       else read();
     };
 
@@ -51,10 +51,10 @@ class FileHandler extends Observer {
 
     const read = () => {
       if(this.stop) return;
-      let start = chunkSize * index;
-      let end = (start + chunkSize) >= size ? size : (start + chunkSize);
-      chunkFile = blobSlice.call(file, start, end);
-      fileReader.readAsArrayBuffer(chunkFile);
+      start = chunkSize * index;
+      end = (start + chunkSize) >= size ? size : (start + chunkSize);
+      chunk = blobSlice.call(file, start, end);
+      fileReader.readAsArrayBuffer(chunk);
     };
 
     read();

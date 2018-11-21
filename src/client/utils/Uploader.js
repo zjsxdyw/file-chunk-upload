@@ -398,7 +398,7 @@ class Uploader {
    */
   handleError(err) {
     this.state = ERROR;
-    this.errorMessage = e;
+    this.errorMessage = err;
   }
 
   /**

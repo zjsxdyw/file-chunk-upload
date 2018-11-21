@@ -5,11 +5,17 @@
     <title>DEMO</title>
 </head>
 <body>
-    <input id="input" type="file" name="">
-    <span id="percentage"></span>
-    <button id="pause">pause</button>
-    <button id="continue">continue</button>
-    <button id="remove">remove</button>
-    <button id="download">download</button>
+    <input id="input" type="file" name="" multiple="multiple">
+    <table id="files" border="1">
+        <tr v-for="file in files">
+            <td v-text="file.name"></td>
+            <td v-text="file.percentage"></td>
+            <td><button @click="upload(file)">upload</button></td>
+            <td><button @click="pause(file)">pause</button></td>
+            <td><button @click="goon(file)">continue</button></td>
+            <td><button @click="download(file)">download</button></td>
+            <td><button @click="remove(file)">remove</button></td>
+        </tr>
+    </table>
 </body>
 </html>

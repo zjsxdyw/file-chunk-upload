@@ -180,20 +180,20 @@ class Uploader {
           this.completed(info.response);
           return;
         }
-        this.applyUploadId(info && info.uploadId);
+        this.applyForUploadId(info && info.uploadId);
       });
       fileHandler.calculateForFirstSize();
     } else {
-      this.applyUploadId();
+      this.applyForUploadId();
     }
   }
 
   /**
-   * Apply uploadId
+   * Apply for uploadId
    * 
    * @param {String} uploadId
    */
-  applyUploadId(uploadId) {
+  applyForUploadId(uploadId) {
     let { prepareUrl, headers, onPrepare, handlePrepare } = this.options;
     const param = {
       url: prepareUrl,
@@ -209,7 +209,7 @@ class Uploader {
       (chunkMD5List || []).forEach(md5 => this.isExistMap[md5] = true);
       this.calculateMD5();
     }).catch(err => {
-      this.handleError(err);
+      this.handleError(err, 'prepare');
     });
   }
 
@@ -294,7 +294,7 @@ class Uploader {
         reupload--;
         this.addToQueue(data);
       } else {
-        this.handleError(err);
+        this.handleError(err, 'upload');
       }
     }).finally(() => {
       this.queue.done(uid);
@@ -373,7 +373,7 @@ class Uploader {
     promise.then(data => {
       this.completed(data);
     }).catch(err => {
-      this.handleError(err);
+      this.handleError(err, 'merge');
     });
   }
 
@@ -390,15 +390,21 @@ class Uploader {
     this.updatePercentage(100);
     this.saveInfo();
     this.remove();
+    if (isFunction(this.options.success)) {
+      this.options.success.call(this.file, this.file, response);
+    }
   }
 
   /**
    * Handle error
    * @param {Any} err
    */
-  handleError(err) {
+  handleError(err, type) {
     this.state = ERROR;
-    this.errorMessage = err;
+    this.remove();
+    if (isFunction(this.options.error)) {
+      this.options.error.call(this.file, this.file, err, type);
+    }
   }
 
   /**

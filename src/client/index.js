@@ -1,46 +1,39 @@
 import FileUploader from './FileUploader.js'
-import sendRequest, { submitFile } from './utils/request.js'
+import Vue from 'vue'
 
-const fileUploader = new FileUploader({
-  maxConcurrent: 1,
-  autoUpload: true
+window.fileUploader = new FileUploader({
+  maxConcurrent: 2,
+  autoUpload: true,
 });
 document.getElementById('input').addEventListener('change', function() {
-  if(!this.files[0]) return;
-
-  window.file = fileUploader.addFile(this.files[0]);
-
-  let percentage = window.file.percentage;
-  Object.defineProperty(window.file, 'percentage', {
-    get() {
-      return percentage;
-    },
-    set(newValue) {
-      percentage = newValue;
-      document.getElementById('percentage').innerText = percentage;
-      return newValue;
-    }
-  });
+  for(let i = 0, len = this.files.length; i < len; i++) {
+    fileUploader.addFile(this.files[i]);
+  }
 
   document.getElementById('input').value = '';
 });
 
-document.getElementById('pause').addEventListener('click', function() {
-  file && fileUploader.pause(file);
-});
-
-document.getElementById('continue').addEventListener('click', function() {
-  file && fileUploader.continue(file);
-});
-
-document.getElementById('remove').addEventListener('click', function() {
-  if(file) {
-    fileUploader.remove(file);
-    window.file = undefined;
-    document.getElementById('input').value = '';
+new Vue({
+  el: '#files',
+  data: {
+    files: fileUploader.fileList
+  },
+  methods: {
+    upload(file) {
+      fileUploader.upload(file);
+    },
+    pause(file) {
+      fileUploader.pause(file);
+    },
+    goon(file) {
+      fileUploader.continue(file);
+    },
+    download(file) {
+      if(file && file.response)
+        window.open(`/file/download/${file.response.downloadId}?fileName=${file.name}`);
+    },
+    remove(file) {
+      fileUploader.remove(file);
+    }
   }
-});
-
-document.getElementById('download').addEventListener('click', function() {
-  file && file.response && open('/file/download/' + file.response.downloadId + '?fileName=' + file.name);
 });

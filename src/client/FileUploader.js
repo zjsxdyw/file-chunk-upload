@@ -36,7 +36,6 @@ class FileUploader {
   constructor(options) {
     this.options = extend(options, defaultOptions);
     this.queue = new AsyncQueue(options.maxConcurrent);
-    this.version = '0.3.2';
     this.storage = new Storage('file-upload');
     this.fileList = [];
     this.map = {};

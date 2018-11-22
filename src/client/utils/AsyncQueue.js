@@ -10,6 +10,7 @@ class AsyncQueue {
     this.uid = 0;
     this.set = new Set();
     this.map = {};
+    this.index = 0;
   }
 
   /**
@@ -22,11 +23,25 @@ class AsyncQueue {
   add(callback, taskId, forward) {
     let operator = forward ? 'unshift' : 'push';
     let uid = this.uid++;
-    this.queue[operator]({
-      uid,
-      fn: callback,
-      taskId
-    });
+    // this.queue[operator]({
+    //   uid,
+    //   fn: callback,
+    //   taskId
+    // });
+    // this.run();
+    // return uid;
+
+
+    let index = this.queue.findIndex(item => item.taskId === taskId);
+    let task;
+    if(index === -1) {
+      task = {
+        taskId,
+        taskList: []
+      };
+      this.queue.unshift(task);
+    } else task = this.queue[index];
+    task.taskList[operator]({ uid, fn: callback });
     this.run();
     return uid;
   }
@@ -36,12 +51,27 @@ class AsyncQueue {
    */
   run() {
     Promise.resolve().then(() => {
-      for(let i = 0; i < this.queue.length && this.set.size < this.maxLength; i++) {
-        let { uid, fn, taskId } = this.queue[i];
-        if(this.map[taskId]) continue;
-        Promise.resolve().then(() => fn(uid));
+      // for(let i = 0; i < this.queue.length && this.set.size < this.maxLength; i++) {
+      //   let { uid, fn, taskId } = this.queue[i];
+      //   if(this.map[taskId]) continue;
+      //   Promise.resolve().then(() => fn(uid));
+      //   this.set.add(uid);
+      //   this.queue.splice(i--, 1);
+      // }
+
+      while(this.index < this.queue.length && this.set.size < this.maxLength) {
+        let { taskId, taskList } = this.queue[this.index];
+        if(this.map[taskId]) {
+          if(this.index === 0) break;
+          this.index = 0;
+          continue;
+        }
+        let { uid, fn } = taskList.shift();
         this.set.add(uid);
-        this.queue.splice(i--, 1);
+        Promise.resolve().then(() => fn(uid));
+        if(taskList.length === 0) this.queue.splice(this.index, 1);
+        else this.index++;
+        if(this.index >= this.queue.length) this.index = 0;
       }
     });
   }
@@ -73,6 +103,12 @@ class AsyncQueue {
    */
   pause(taskId) {
     this.map[taskId] = true;
+
+    let index = this.queue.findIndex(item => item.taskId === taskId);
+    if(index === -1) return;
+    let task = this.queue[index];
+    this.queue.splice(index, 1);
+    this.queue.push(task);
   }
 
   /**
@@ -81,7 +117,13 @@ class AsyncQueue {
    */
   continue(taskId) {
     delete this.map[taskId];
-    this.run();
+    // this.run();
+
+    let index = this.queue.findIndex(item => item.taskId === taskId);
+    if(index === -1) return;
+    let task = this.queue[index];
+    this.queue.splice(index, 1);
+    this.queue.unshift(task);
   }
 
   /**

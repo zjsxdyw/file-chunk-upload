@@ -117,13 +117,14 @@ class AsyncQueue {
    */
   continue(taskId) {
     delete this.map[taskId];
-    // this.run();
 
     let index = this.queue.findIndex(item => item.taskId === taskId);
     if(index === -1) return;
     let task = this.queue[index];
     this.queue.splice(index, 1);
     this.queue.unshift(task);
+    
+    this.run();
   }
 
   /**

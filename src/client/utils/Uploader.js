@@ -182,7 +182,16 @@ class Uploader {
         }
         this.applyForUploadId(info && info.uploadId);
       });
-      fileHandler.calculateForFirstSize();
+      fileHandler.calculateForFirstSize().then((md5) => {
+        this.firstMD5 = md5;
+        let info = this.storage.get(this.getKey());
+        if (info && info.done) {
+          this.uploadId = info.uploadId;
+          this.completed(info.response);
+          return;
+        }
+        this.applyForUploadId(info && info.uploadId);
+      }).catch(() => {});
     } else {
       this.applyForUploadId();
     }
@@ -428,7 +437,7 @@ class Uploader {
       let result = data;
       if(isFunction(callback)) result = callback(data);
       return result === undefined ? data : result;
-    });
+    }).catch(() => {});
 
     return promise;
   }
@@ -494,7 +503,7 @@ class Uploader {
    */
   getKey() {
     let file = this.file;
-    return `${file.name}#${file.size}#${file.lastModified}#${file.firstMD5}`;
+    return `${file.name}#${file.size}#${file.lastModified}#${this.firstMD5}`;
   }
 
   /**
@@ -504,7 +513,6 @@ class Uploader {
     let key = this.getKey();
     let info = {
       uploadId: this.uploadId,
-      date: new Date().getTime()
     };
     if (this.state === COMPLETED) {
       info.done = true;

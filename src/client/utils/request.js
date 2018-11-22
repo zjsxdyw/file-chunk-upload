@@ -93,7 +93,7 @@ export default function (options) {
       data += `${key}=${options.data[key]}`;
     });
   }
-  if(options.type === 'GET') {
+  if(options.type === 'GET' && data) {
     options.url += `?${data}`;
     data = null;
   }

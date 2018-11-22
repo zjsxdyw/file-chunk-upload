@@ -64,22 +64,23 @@ class FileHandler extends Observer {
    * Calculate the md5 value of the first size of the file
    */
   calculateForFirstSize() {
-    let fileReader = new FileReader();
-    let spark = new SparkMD5.ArrayBuffer();
+    return new Promise((resolve, reject) => {
+      let fileReader = new FileReader();
+      let spark = new SparkMD5.ArrayBuffer();
 
-    fileReader.onload = (event) => {
-      if(this.stop) return;
-      this.fireEvent('firstLoad', spark.end());
-    };
+      fileReader.onload = (event) => {
+        if(this.stop) reject();
+        else resolve(spark.end());
+      };
 
-    fileReader.onerror = (event) => {
-      console.warn('oops, something went wrong.');
-      this.fireEvent('error');
-    };
+      fileReader.onerror = (event) => {
+        reject();
+      };
 
-    let end = this.firstSize >= this.size ? this.size : this.firstSize;
+      let end = this.firstSize >= this.size ? this.size : this.firstSize;
 
-    fileReader.readAsArrayBuffer(blobSlice.call(this.file, 0, end));
+      fileReader.readAsArrayBuffer(blobSlice.call(this.file, 0, end));
+    });
   }
 
   abort() {

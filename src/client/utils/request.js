@@ -1,3 +1,4 @@
+import { extend } from './util.js'
 /**
  * Creates a XHR request
  * @param {Object} options
@@ -53,6 +54,7 @@ const sendRequest = (xhr, data) => {
  * @return {Promise}
  */
 export const submitFile = (options) => {
+  options = extend({}, options);
   const data = options.data;
   const formData = new FormData();
   for (let name in data) {
@@ -80,6 +82,7 @@ export const submitFile = (options) => {
  * @returns Promise
  */
 export default function (options) {
+  options = extend({}, options);
   options.type = (options.type || 'GET').toUpperCase();
   let data, url = options.url;
   if(options.data) {

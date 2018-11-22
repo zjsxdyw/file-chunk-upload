@@ -324,7 +324,6 @@ class Uploader {
    * @param {String} md5
    */
   checkMD5(md5) {
-    if ([UPLOADING, PAUSE].indexOf(this.state) === -1) return;
     this.md5 = md5;
     let { checkUrl, headers, onCheck, handleCheck } = this.options;
     const param = {
@@ -334,7 +333,6 @@ class Uploader {
       md5: this.md5,
       file: this.file.raw
     };
-
 
     let total = this.fileHandler.total;
     if(total === 1) this.queue.pause(this.taskId);

@@ -38,10 +38,10 @@ class FileHandler extends Observer {
       spark.append(event.target.result);
       chunkSpark.append(event.target.result);
       let md5 = chunkSpark.end();
-      this.fireEvent('chunkLoad', { chunk, md5, index, start, end });
       index++;
       if(index === total) this.fireEvent('load', spark.end());
       else read();
+      this.fireEvent('chunkLoad', { chunk, md5, index: index - 1, start, end });
     };
 
     fileReader.onerror = (event) => {

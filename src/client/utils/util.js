@@ -49,7 +49,7 @@ export const isObject = (obj) => {
  * @return {Boolean}
  */
 export const isPromise = (p) => {
-  if(toString(p) === '[object Promise]') return true;
+  if (toString(p) === '[object Promise]') return true;
   return !!p && isFunction(p.then) && isFunction(p.cacah) && isFunction(p.finally);
 };
 
@@ -62,12 +62,14 @@ export const isPromise = (p) => {
 export const extend = (target, options) => {
   target = target || {};
   options = options || {};
-  for(let key in options) {
+  for (let key in options) {
     let value1 = target[key];
     let value2 = options[key];
-    if(Array.isArray(value2) || isObject(value2)) {
-      target[key] = extend(value1, value2);
-    } else if(toString(value1) === toString(value2)) {
+    if (Array.isArray(value2)) {
+      target[key] = extend(value1 || [], value2);
+    } else if (isObject(value2)) {
+      target[key] = extend(value1 || {}, value2);
+    } else if (toString(value1) === toString(value2)) {
       target[key] = value1;
     } else {
       target[key] = value2;

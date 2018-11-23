@@ -1,4 +1,4 @@
-import FileUploader from './FileUploader.js'
+import FileUploader from '../../src/FileUploader.js'
 import Vue from 'vue'
 
 window.fileUploader = new FileUploader({

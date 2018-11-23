@@ -1,13 +1,13 @@
 {
   "name": "file-upload",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "file upload",
   "main": "index.js",
   "scripts": {
-    "build": "webpack --mode production",
-    "start": "npm run build && node src/server/index.js",
-    "client": "webpack-dev-server --mode development --devtool inline-source-map --hot",
-    "server": "nodemon --inspect src/server/index.js",
+    "build": "webpack --config webpack.production.config.js",
+    "start": "npm run dev",
+    "client": "webpack-dev-server --config webpack.development.config.js --hot",
+    "server": "nodemon --inspect example/server/index.js",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "author": "dingyiwei",

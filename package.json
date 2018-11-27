@@ -1,7 +1,7 @@
 {
-  "name": "file-upload",
-  "version": "0.3.8",
-  "description": "file upload",
+  "name": "file-chunk-upload",
+  "version": "0.3.9",
+  "description": "file chunk upload",
   "main": "index.js",
   "scripts": {
     "build": "webpack --config webpack.production.config.js",

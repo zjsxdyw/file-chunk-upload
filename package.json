@@ -1,8 +1,8 @@
 {
   "name": "file-chunk-upload",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "file chunk upload",
-  "main": "index.js",
+  "main": "dist/file-chunk-upload.js",
   "scripts": {
     "build": "webpack --config webpack.production.config.js",
     "start": "npm run dev",

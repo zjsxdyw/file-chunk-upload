@@ -7,8 +7,8 @@ const outputDirectory = path.join(__dirname, 'dist');
 module.exports = {
   mode: 'production',
   entry: {
-    'file-upload': './src/FileUploader.js',
-    'file-upload.min': './src/FileUploader.js'
+    'file-chunk-upload': './src/FileUploader.js',
+    'file-chunk-upload.min': './src/FileUploader.js'
   },
   output: {
     path: outputDirectory,

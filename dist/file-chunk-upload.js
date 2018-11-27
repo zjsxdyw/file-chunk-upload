@@ -1228,7 +1228,7 @@ function (_Observer) {
         chunkSpark.append(event.target.result);
         var md5 = chunkSpark.end();
         index++;
-        if (index === total) _this2.fireEvent('load', spark.end());else read();
+        if (index === total) _this2.fireEvent('load', spark.end());
 
         _this2.fireEvent('chunkLoad', {
           chunk: chunk,
@@ -1237,6 +1237,8 @@ function (_Observer) {
           start: start,
           end: end
         });
+
+        if (index !== total) read();
       };
 
       fileReader.onerror = function (event) {
@@ -2401,8 +2403,12 @@ function () {
 
   FileUploader_createClass(FileUploader, [{
     key: "addFile",
-    value: function addFile(file) {
-      var uploader = new utils_Uploader(file, this.options, this.queue, this.storage);
+    value: function addFile(file, success, error) {
+      var options = extend({
+        success: success,
+        error: error
+      }, this.options);
+      var uploader = new utils_Uploader(file, options, this.queue, this.storage);
       this.fileList.push(uploader.file);
       this.map[uploader.file.uid] = uploader;
       return uploader.file;

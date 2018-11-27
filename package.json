@@ -1,6 +1,6 @@
 {
   "name": "file-chunk-upload",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "file chunk upload",
   "main": "index.js",
   "scripts": {
@@ -10,8 +10,16 @@
     "server": "nodemon --inspect example/server/index.js",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/zjsxdyw/file-chunk-upload.git"
+  },
+  "keywords": ["chunk", "upload"],
   "author": "dingyiwei",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zjsxdyw/file-chunk-upload/issues"
+  },
   "devDependencies": {
     "@babel/core": "^7.1.5",
     "@babel/preset-env": "^7.1.5",

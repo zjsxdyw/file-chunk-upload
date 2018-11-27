@@ -64,8 +64,9 @@ class FileUploader {
    * @param {File} file
    * @return {Object}
    */
-  addFile(file) {
-    let uploader = new Uploader(file, this.options, this.queue, this.storage);
+  addFile(file, success, error) {
+    let options = extend({ success, error }, this.options);
+    let uploader = new Uploader(file, options, this.queue, this.storage);
     this.fileList.push(uploader.file);
     this.map[uploader.file.uid] = uploader;
     return uploader.file;

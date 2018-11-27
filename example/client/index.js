@@ -7,7 +7,11 @@ window.fileUploader = new FileUploader({
 });
 document.getElementById('input').addEventListener('change', function() {
   for(let i = 0, len = this.files.length; i < len; i++) {
-    fileUploader.addFile(this.files[i]);
+    fileUploader.addFile(this.files[i], (file, response) => {
+      console.log(file, response);
+    }, (file, error, type) => {
+      console.log(file, error, type);
+    });
   }
 
   document.getElementById('input').value = '';

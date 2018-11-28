@@ -495,7 +495,7 @@ class Uploader {
       percentage = 100;
     }
     this.file.percentage = percentage;
-    if(isFunction(this.options.onProgress)) this.options.onProgress(this.file);
+    if(isFunction(this.options.progress)) this.options.progress.call(this.file, this.file);
   }
 
   /**

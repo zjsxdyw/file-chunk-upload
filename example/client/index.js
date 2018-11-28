@@ -11,6 +11,8 @@ document.getElementById('input').addEventListener('change', function() {
       console.log(file, response);
     }, (file, error, type) => {
       console.log(file, error, type);
+    }, (file) => {
+      console.log(file);
     });
   }
 

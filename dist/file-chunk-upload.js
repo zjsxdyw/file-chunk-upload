@@ -2138,7 +2138,7 @@ function () {
       }
 
       this.file.percentage = percentage;
-      if (isFunction(this.options.onProgress)) this.options.onProgress(this.file);
+      if (isFunction(this.options.progress)) this.options.progress.call(this.file, this.file);
     }
     /**
      * Get the storage key
@@ -2397,16 +2397,20 @@ function () {
   /**
    * Add a file
    * @param {File} file
+   * @param {Function} success
+   * @param {Function} error
+   * @param {Function} progress
    * @return {Object}
    */
 
 
   FileUploader_createClass(FileUploader, [{
     key: "addFile",
-    value: function addFile(file, success, error) {
+    value: function addFile(file, success, error, progress) {
       var options = extend({
         success: success,
-        error: error
+        error: error,
+        progress: progress
       }, this.options);
       var uploader = new utils_Uploader(file, options, this.queue, this.storage);
       this.fileList.push(uploader.file);

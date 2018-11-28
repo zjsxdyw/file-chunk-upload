@@ -1,6 +1,6 @@
 {
   "name": "file-chunk-upload",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "description": "file chunk upload",
   "main": "dist/file-chunk-upload.js",
   "scripts": {

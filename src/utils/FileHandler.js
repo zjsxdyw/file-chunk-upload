@@ -15,7 +15,7 @@ class FileHandler extends Observer {
     this.size = file.size;
     this.firstSize = firstSize || 1024 * 256;
     this.chunkSize = chunkSize || 1024 * 1024 * 4;
-    this.total = Math.ceil(this.size / this.chunkSize);
+    this.total = Math.ceil(this.size / this.chunkSize) || 1;
     this.stop = false;
   }
 

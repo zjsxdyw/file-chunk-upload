@@ -488,8 +488,10 @@ class Uploader {
     let percentage;
     if(number) {
       percentage = number;
-    } else {
+    } else if(this.file.size) {
       percentage = Math.ceil(this.chunkList.reduce((sum, item) => sum + item.uploadSize, 0) / this.file.size * 100);
+    } else {
+      percentage = 100;
     }
     if (percentage > 100) {
       percentage = 100;

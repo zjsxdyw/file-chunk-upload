@@ -1198,7 +1198,7 @@ function (_Observer) {
     _this.size = file.size;
     _this.firstSize = firstSize || 1024 * 256;
     _this.chunkSize = chunkSize || 1024 * 1024 * 4;
-    _this.total = Math.ceil(_this.size / _this.chunkSize);
+    _this.total = Math.ceil(_this.size / _this.chunkSize) || 1;
     _this.stop = false;
     return _this;
   }
@@ -1718,11 +1718,14 @@ function () {
 
       var _this$options = this.options,
           firstSize = _this$options.firstSize,
-          chunkSize = _this$options.chunkSize;
+          chunkSize = _this$options.chunkSize,
+          reupload = _this$options.reupload;
       var fileHandler = new utils_FileHandler(this.file.raw, firstSize, chunkSize);
       this.fileHandler = fileHandler;
       this.chunkList = new Array(fileHandler.total).fill().map(function () {
-        return extend({}, chunkObject);
+        return extend({
+          reupload: reupload
+        }, chunkObject);
       });
 
       if (fileHandler.total > 1) {
@@ -1874,8 +1877,7 @@ function () {
           uploadUrl = _this$options3.uploadUrl,
           headers = _this$options3.headers,
           onUpload = _this$options3.onUpload,
-          handleUpload = _this$options3.handleUpload,
-          reupload = _this$options3.reupload;
+          handleUpload = _this$options3.handleUpload;
       var param = {
         uploadId: this.uploadId,
         url: uploadUrl,
@@ -1901,8 +1903,8 @@ function () {
       }).catch(function (err) {
         if (err === 'abort') return;
 
-        if (reupload > 0) {
-          reupload--;
+        if (_this5.chunkList[index].reupload > 0) {
+          _this5.chunkList[index].reupload--;
 
           _this5.addToQueue(data);
         } else {
@@ -2127,10 +2129,12 @@ function () {
 
       if (number) {
         percentage = number;
-      } else {
+      } else if (this.file.size) {
         percentage = Math.ceil(this.chunkList.reduce(function (sum, item) {
           return sum + item.uploadSize;
         }, 0) / this.file.size * 100);
+      } else {
+        percentage = 100;
       }
 
       if (percentage > 100) {

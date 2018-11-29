@@ -164,11 +164,11 @@ class Uploader {
    * Prepare for upload
    */
   prepare() {
-    let { firstSize, chunkSize } = this.options;
+    let { firstSize, chunkSize, reupload } = this.options;
     let fileHandler = new FileHandler(this.file.raw, firstSize, chunkSize);
     this.fileHandler = fileHandler;
     this.chunkList = new Array(fileHandler.total).fill().map(() => {
-      return extend({}, chunkObject);
+      return extend({ reupload }, chunkObject);
     });
 
     if (fileHandler.total > 1) {
@@ -273,7 +273,7 @@ class Uploader {
       return;
     }
     let { chunk, md5, index, start, end } = data;
-    let { uploadUrl, headers, onUpload, handleUpload, reupload } = this.options;
+    let { uploadUrl, headers, onUpload, handleUpload } = this.options;
     const param = {
       uploadId: this.uploadId,
       url: uploadUrl,
@@ -299,8 +299,8 @@ class Uploader {
       this.chunkComleted(index, end - start);
     }).catch(err => {
       if (err === 'abort') return;
-      if(reupload > 0) {
-        reupload--;
+      if(this.chunkList[index].reupload > 0) {
+        this.chunkList[index].reupload--;
         this.addToQueue(data);
       } else {
         this.handleError(err, 'upload');

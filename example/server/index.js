@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const multer  = require('multer');
 const os = require('os');
 const fs = require('fs');
+const rimraf = require('rimraf');
 
 const app = express();
 // parse application/x-www-form-urlencoded
@@ -24,6 +25,13 @@ const createFolder = (dirPath) => {
 const isDirectory = (folderName) => {
   let dirPath = uploadFolder + folderName;
   return fs.existsSync(dirPath) && fs.lstatSync(dirPath).isDirectory();
+};
+
+const removeFolder = (folderName) => {
+  let dirPath = uploadFolder + folderName;
+  rimraf(dirPath, (err) => {
+
+  });
 };
 
 const guid = () => {
@@ -69,8 +77,10 @@ app.get('/file/prepare', (req, res) => {
 });
 
 app.get('/file/check', (req, res) => {
-  if(fs.existsSync(downloadFolder + req.query.md5)) res.send({ downloadId: req.query.md5 });
-  else res.send(false);
+  if(fs.existsSync(downloadFolder + req.query.md5)) {
+    removeFolder(req.query.uploadId);
+    res.send({ downloadId: req.query.md5 });
+  } else res.send(false);
 });
 
 app.post('/file/upload', upload.single('file'), (req, res) => { 
@@ -130,6 +140,7 @@ app.post('/file/merge', (req, res) => {
   });
 
   Promise.all(promises).then(() => {
+    removeFolder(uploadId);
     res.send({ downloadId: md5 });
   });
 });

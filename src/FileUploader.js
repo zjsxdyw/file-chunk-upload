@@ -40,6 +40,14 @@ class FileUploader {
     this.fileList = [];
     this.map = {};
 
+    // remove the isUploading state
+    Object.keys(this.storage.storage).forEach(key => {
+      let info = this.storage.get(key);
+      if(info && info.isUploading) {
+        info.isUploading = false;
+      }
+    });
+
     let methods = ['upload', 'pause', 'continue'];
 
     methods.forEach((method) => {

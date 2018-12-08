@@ -172,7 +172,7 @@ class Uploader {
     });
 
     if (fileHandler.total > 1) {
-      fileHandler.on('firstLoad', (md5) => {
+      fileHandler.calculateForFirstSize().then((md5) => {
         this.firstMD5 = md5;
         let info = this.storage.get(this.getKey());
         if (info && info.done) {
@@ -180,14 +180,8 @@ class Uploader {
           this.completed(info.response);
           return;
         }
-        this.applyForUploadId(info && info.uploadId);
-      });
-      fileHandler.calculateForFirstSize().then((md5) => {
-        this.firstMD5 = md5;
-        let info = this.storage.get(this.getKey());
-        if (info && info.done) {
-          this.uploadId = info.uploadId;
-          this.completed(info.response);
+        if (info && info.isUploading) {
+          this.handleError(undefined, 'repetitive');
           return;
         }
         this.applyForUploadId(info && info.uploadId);
@@ -514,11 +508,13 @@ class Uploader {
   saveInfo() {
     let key = this.getKey();
     let info = {
-      uploadId: this.uploadId,
+      uploadId: this.uploadId
     };
     if (this.state === COMPLETED) {
       info.done = true;
       info.response = this.response;
+    } else {
+      info.isUploading = true;
     }
     this.storage.set(key, info, this.options.expiration);
   }

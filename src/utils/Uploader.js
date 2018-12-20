@@ -467,13 +467,14 @@ class Uploader {
    * Stop and remove upload
    */
   remove() {
-    if (this.state !== COMPLETED) this.state = ABORT;
+    if ([COMPLETED, ERROR].indexOf(this.state) === -1) this.state = ABORT;
     this.queue.remove(this.taskId);
     this.chunkList.forEach(item => {
       if (item.uploadPromise && item.uploadPromise.abort)
         item.uploadPromise.abort();
     });
     this.fileHandler.abort();
+    this.saveInfo();
   }
 
   /**
@@ -516,7 +517,7 @@ class Uploader {
     if (this.state === COMPLETED) {
       info.done = true;
       info.response = this.response;
-    } else {
+    } else if([ERROR, ABORT].indexOf(this.state) === -1) {
       info.isUploading = true;
     }
     this.storage.set(key, info, this.options.expiration);

@@ -385,6 +385,7 @@ class Uploader {
    * @param {Object} response
    */
   completed(response) {
+    if(this.state === COMPLETED) return;
     this.response = response;
     this.file.response = response;
     if (this.state !== UPLOADING) return;
@@ -402,6 +403,7 @@ class Uploader {
    * @param {Any} err
    */
   handleError(err, type) {
+    if(this.state === ERROR) return;
     this.state = ERROR;
     this.remove();
     if (isFunction(this.options.error)) {

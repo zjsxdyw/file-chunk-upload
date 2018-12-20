@@ -2007,6 +2007,7 @@ function () {
   }, {
     key: "completed",
     value: function completed(response) {
+      if (this.state === COMPLETED) return;
       this.response = response;
       this.file.response = response;
       if (this.state !== UPLOADING) return;
@@ -2027,6 +2028,7 @@ function () {
   }, {
     key: "handleError",
     value: function handleError(err, type) {
+      if (this.state === ERROR) return;
       this.state = ERROR;
       this.remove();
 

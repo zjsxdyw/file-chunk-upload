@@ -1729,7 +1729,7 @@ function () {
       });
 
       if (fileHandler.total > 1) {
-        fileHandler.on('firstLoad', function (md5) {
+        fileHandler.calculateForFirstSize().then(function (md5) {
           _this.firstMD5 = md5;
 
           var info = _this.storage.get(_this.getKey());
@@ -1742,17 +1742,8 @@ function () {
             return;
           }
 
-          _this.applyForUploadId(info && info.uploadId);
-        });
-        fileHandler.calculateForFirstSize().then(function (md5) {
-          _this.firstMD5 = md5;
-
-          var info = _this.storage.get(_this.getKey());
-
-          if (info && info.done) {
-            _this.uploadId = info.uploadId;
-
-            _this.completed(info.response);
+          if (info && info.isUploading) {
+            _this.handleError(undefined, 'repetitive');
 
             return;
           }
@@ -1840,16 +1831,17 @@ function () {
      * Add chunk upload task to the async queue
      * 
      * @param {Object} data
+     * @param {Boolean} forward
      */
 
   }, {
     key: "addToQueue",
-    value: function addToQueue(data) {
+    value: function addToQueue(data, forward) {
       var _this4 = this;
 
       this.queue.add(function (uid) {
         _this4.uploadChunk(uid, data);
-      }, this.taskId);
+      }, this.taskId, forward);
     }
     /**
      * Upload chunk file
@@ -1906,7 +1898,7 @@ function () {
         if (_this5.chunkList[index].reupload > 0) {
           _this5.chunkList[index].reupload--;
 
-          _this5.addToQueue(data);
+          _this5.addToQueue(data, true);
         } else {
           _this5.handleError(err, 'upload');
         }
@@ -2169,6 +2161,8 @@ function () {
       if (this.state === COMPLETED) {
         info.done = true;
         info.response = this.response;
+      } else {
+        info.isUploading = true;
       }
 
       this.storage.set(key, info, this.options.expiration);
@@ -2336,7 +2330,15 @@ function () {
     this.queue = new utils_AsyncQueue(options.maxConcurrent);
     this.storage = new utils_Storage('file-upload');
     this.fileList = [];
-    this.map = {};
+    this.map = {}; // remove the isUploading state
+
+    Object.keys(this.storage.storage).forEach(function (key) {
+      var info = _this.storage.get(key);
+
+      if (info && info.isUploading) {
+        info.isUploading = false;
+      }
+    });
     var methods = ['upload', 'pause', 'continue'];
     methods.forEach(function (method) {
       _this[method] = function (fileObj) {

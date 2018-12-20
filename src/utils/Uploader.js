@@ -248,11 +248,12 @@ class Uploader {
    * Add chunk upload task to the async queue
    * 
    * @param {Object} data
+   * @param {Boolean} forward
    */
-  addToQueue(data) {
+  addToQueue(data, forward) {
     this.queue.add((uid) => {
       this.uploadChunk(uid, data);
-    }, this.taskId);
+    }, this.taskId, forward);
   }
 
   /**
@@ -295,7 +296,7 @@ class Uploader {
       if (err === 'abort') return;
       if(this.chunkList[index].reupload > 0) {
         this.chunkList[index].reupload--;
-        this.addToQueue(data);
+        this.addToQueue(data, true);
       } else {
         this.handleError(err, 'upload');
       }

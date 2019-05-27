@@ -69,6 +69,7 @@ class FileHandler extends Observer {
       let spark = new SparkMD5.ArrayBuffer();
 
       fileReader.onload = (event) => {
+        spark.append(event.target.result);
         if(this.stop) reject();
         else resolve(spark.end());
       };

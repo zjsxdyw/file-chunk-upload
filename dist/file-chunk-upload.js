@@ -973,7 +973,7 @@ function () {
     key: "done",
     value: function done(uid) {
       if (this.set.has(uid)) {
-        this.set.delete(uid);
+        this.set["delete"](uid);
       }
 
       this.run();
@@ -1271,6 +1271,7 @@ function (_Observer) {
         var spark = new spark_md5_default.a.ArrayBuffer();
 
         fileReader.onload = function (event) {
+          spark.append(event.target.result);
           if (_this3.stop) reject();else resolve(spark.end());
         };
 
@@ -1348,7 +1349,7 @@ var isObject = function isObject(obj) {
 
 var isPromise = function isPromise(p) {
   if (util_toString(p) === '[object Promise]') return true;
-  return !!p && isFunction(p.then) && isFunction(p.cacah) && isFunction(p.finally);
+  return !!p && isFunction(p.then) && isFunction(p.cacah) && isFunction(p["finally"]);
 };
 /**
  * Extend the object
@@ -1749,7 +1750,7 @@ function () {
           }
 
           _this.applyForUploadId(info && info.uploadId);
-        }).catch(function () {});
+        })["catch"](function () {});
       } else {
         this.applyForUploadId();
       }
@@ -1786,7 +1787,7 @@ function () {
         });
 
         _this2.calculateMD5();
-      }).catch(function (err) {
+      })["catch"](function (err) {
         _this2.handleError(err, 'prepare');
       });
     }
@@ -1892,7 +1893,7 @@ function () {
       this.chunkList[index].uploadPromise = promise;
       promise.then(function () {
         _this5.chunkComleted(index, end - start);
-      }).catch(function (err) {
+      })["catch"](function (err) {
         if (err === 'abort') return;
 
         if (_this5.chunkList[index].reupload > 0) {
@@ -1902,7 +1903,7 @@ function () {
         } else {
           _this5.handleError(err, 'upload');
         }
-      }).finally(function () {
+      })["finally"](function () {
         _this5.queue.done(uid);
 
         _this5.chunkList[index].uploadPromise = null;
@@ -1955,11 +1956,11 @@ function () {
       var promise = this.handlePromise(_checkMD, onCheck, handleCheck, [param]);
       promise.then(function (data) {
         if (data) _this6.completed(data);
-      }).catch(function (err) {
+      })["catch"](function (err) {
         console.log(err);
-      }).finally(function () {
+      })["finally"](function () {
         if ([UPLOADING].indexOf(_this6.state) > -1 && total === 1) {
-          _this6.queue.continue(_this6.taskId);
+          _this6.queue["continue"](_this6.taskId);
         }
       });
     }
@@ -1994,7 +1995,7 @@ function () {
       var promise = this.handlePromise(_merge, onMerge, handleMerge, [param]);
       promise.then(function (data) {
         _this7.completed(data);
-      }).catch(function (err) {
+      })["catch"](function (err) {
         _this7.handleError(err, 'merge');
       });
     }
@@ -2063,7 +2064,7 @@ function () {
         var result = data;
         if (isFunction(callback)) result = callback(data);
         return result === undefined ? data : result;
-      }).catch(function () {});
+      })["catch"](function () {});
       return promise;
     }
     /**
@@ -2092,7 +2093,7 @@ function () {
         return;
       }
 
-      this.queue.continue(this.taskId);
+      this.queue["continue"](this.taskId);
       this.updatePercentage();
       this.merge();
     }
@@ -2364,8 +2365,8 @@ function () {
           _iteratorError = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion && _iterator.return != null) {
-              _iterator.return();
+            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+              _iterator["return"]();
             }
           } finally {
             if (_didIteratorError) {
@@ -2391,8 +2392,8 @@ function () {
           _iteratorError2 = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-              _iterator2.return();
+            if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+              _iterator2["return"]();
             }
           } finally {
             if (_didIteratorError2) {
@@ -2465,8 +2466,8 @@ function () {
         _iteratorError3 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
-            _iterator3.return();
+          if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
+            _iterator3["return"]();
           }
         } finally {
           if (_didIteratorError3) {
